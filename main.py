@@ -1,7 +1,7 @@
 import machine
 import time
+import vga1_16x32 as font
 from st7789py import ST7789, WHITE, BLACK
-from romfonts import vga1_16x32 as font
 from victron_ble import VictronBLE
 
 power = machine.Pin(4, machine.Pin.OUT)  # when not powered via USB
