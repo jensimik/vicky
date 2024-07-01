@@ -31,7 +31,7 @@ def display_func(text, offset):
     lcd.text(font, text, 6, offset, WHITE, BLACK)
 
 
-# setup Victron devices
+# setup Victron devices, you can find mac and encryption keys in the victron mobile app
 solar = VictronSolar(
     mac=b"\xee\xc0\xb8\x8c\x53\xf4",
     key=b"\x10\x63\x76\x13\x6f\xf4\xd0\x8c\x6a\x01\x99\x15\xfd\xee\xc0\x11",
