@@ -31,7 +31,7 @@ class VictronDevice(metaclass=Devicemeta):
         self._key = key
         self._text_format = text_format
         self.callback = callback
-        self._offset = offset
+        self._data = {}
 
     def uncipher(self, adv_data: memoryview) -> str:
         ctr = bytearray(adv_data[12:14])
@@ -43,6 +43,12 @@ class VictronDevice(metaclass=Devicemeta):
         cipher.encrypt(ctr, ctr)
         cleartext = bytes(a ^ b for a, b in zip(ciphertext, ctr))
         return cleartext
+
+    def _return_if_changed(self, data: dict):
+        if self._data == data:
+            return None
+        self._data = data
+        return self._data
 
 
 class VictronSolar(VictronDevice):
@@ -61,15 +67,17 @@ class VictronSolar(VictronDevice):
         external_device_load = (
             0 if external_device_load == 0x1FF else external_device_load
         )
-        return {
-            "state": state,
-            "error": error,
-            "battery_voltage": battery_voltage,
-            "battery_charging_current": battery_charging_current,
-            "yield_today": yield_today,
-            "solar_power": solar_power,
-            "external_device_load": external_device_load,
-        }
+        return self._return_if_changed(
+            {
+                "state": state,
+                "error": error,
+                "battery_voltage": battery_voltage,
+                "battery_charging_current": battery_charging_current,
+                "yield_today": yield_today,
+                "solar_power": solar_power,
+                "external_device_load": external_device_load,
+            }
+        )
 
 
 class VictronDCDC(VictronDevice):
@@ -78,13 +86,15 @@ class VictronDCDC(VictronDevice):
             "BBhhI", cleartext
         )
         mode = MODES[state]
-        return {
-            "state": state,
-            "error": error,
-            "input_voltage": input_voltage,
-            "output_voltage": output_voltage,
-            "off_reason": off_reason,
-        }
+        return self._return_if_changed(
+            {
+                "state": state,
+                "error": error,
+                "input_voltage": input_voltage,
+                "output_voltage": output_voltage,
+                "off_reason": off_reason,
+            }
+        )
 
 
 class VictronMonitor(VictronDevice):
@@ -102,13 +112,15 @@ class VictronMonitor(VictronDevice):
             struct.unpack("<i", chunk + ("\0" if chunk[2] < 128 else "\xff")) / 1000
         )
         remaining_mins = 999 if remaining_mins > 999 else remaining_mins
-        return {
-            "remaining_mins": remaining_mins,
-            "voltage": voltage,
-            "consumed_ah": consumed_ah,
-            "current": current,
-            "soc": soc,
-        }
+        return self._return_if_changed(
+            {
+                "remaining_mins": remaining_mins,
+                "voltage": voltage,
+                "consumed_ah": consumed_ah,
+                "current": current,
+                "soc": soc,
+            }
+        )
 
 
 class VictronBLE:
@@ -140,5 +152,7 @@ class VictronBLE:
                     device = self._MACS[bytes(addr)]
                     cleartext = device.uncipher(adv_data)
                     data = device.parse(cleartext)
-                    text = device.text_format.format(**data)
-                    device.callback(text)
+                    # only do callback if data changed
+                    if data:
+                        text = device.text_format.format(**data)
+                        device.callback(text)
