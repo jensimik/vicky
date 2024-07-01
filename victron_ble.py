@@ -26,6 +26,8 @@ class DeviceMeta(type):
 
 
 class VictronDevice(metaclass=Devicemeta):
+    """A VictronDevice base class"""
+
     def __init__(self, mac: str, key: str, text_format: str, callback):
         self._mac = mac
         self._key = key
@@ -52,6 +54,8 @@ class VictronDevice(metaclass=Devicemeta):
 
 
 class VictronSolar(VictronDevice):
+    """Victron MPPT Smart Solar charger"""
+
     def parse(self, cleartext: str) -> dict:
         (
             state,
@@ -81,6 +85,8 @@ class VictronSolar(VictronDevice):
 
 
 class VictronDCDC(VictronDevice):
+    """Victron Orion Smart DCDC charger"""
+
     def parse(self, cleartext: str) -> dict:
         state, error, input_voltage, output_voltage, off_reason = struct.unpack(
             "BBhhI", cleartext
@@ -98,6 +104,8 @@ class VictronDCDC(VictronDevice):
 
 
 class VictronMonitor(VictronDevice):
+    """Victron Battery Monitor"""
+
     def parse(self, cleartext: str) -> dict:
         # cannot parse current in 24bit field skipping those bytes with x
         remaining_mins, voltage, alarm, aux, consumed_ah, soc = struct.unpack(
@@ -124,6 +132,8 @@ class VictronMonitor(VictronDevice):
 
 
 class VictronBLE:
+    """Victron Bluetooth scanner"""
+
     def __init__(self):
         self._MACS = {}
 

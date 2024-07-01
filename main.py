@@ -4,10 +4,11 @@ import vga1_16x32 as font
 from st7789py import ST7789, WHITE, BLACK
 from victron_ble import VictronBLE, VictronSolar, VictronDCDC, VictronMonitor
 
+# setup m5stick
 power = machine.Pin(4, machine.Pin.OUT)  # when not powered via USB
 power.on()
 
-# setup lcd
+# setup lcd on the m5stick
 rotation = 1
 spi = machine.SPI(
     1, baudrate=20000000, polarity=1, sck=machine.Pin(13), mosi=machine.Pin(15)
@@ -25,10 +26,12 @@ lcd = ST7789(
 lcd.fill(BLACK)
 
 
+# generic display function to write white text on black background
 def display_func(text, offset):
     lcd.text(font, text, 6, offset, WHITE, BLACK)
 
 
+# setup Victron devices
 solar = VictronSolar(
     mac=b"\xee\xc0\xb8\x8c\x53\xf4",
     key=b"\x10\x63\x76\x13\x6f\xf4\xd0\x8c\x6a\x01\x99\x15\xfd\xee\xc0\x11",
@@ -49,6 +52,7 @@ monitor = VictronMonitor(
     ),
 )
 
+# setup Victron Bluetooth scanner
 victron = VictronBLE()
 victron.register_device(solar)
 victron.register_device(dcdc)
