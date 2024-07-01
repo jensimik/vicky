@@ -154,5 +154,4 @@ class VictronBLE:
                     data = device.parse(cleartext)
                     # only do callback if data changed
                     if data:
-                        text = device.text_format.format(**data)
-                        device.callback(text)
+                        device.callback(data)

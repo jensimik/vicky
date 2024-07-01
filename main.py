@@ -32,20 +32,21 @@ def display_func(text, offset):
 solar = VictronSolar(
     mac=b"\xee\xc0\xb8\x8c\x53\xf4",
     key=b"\x10\x63\x76\x13\x6f\xf4\xd0\x8c\x6a\x01\x99\x15\xfd\xee\xc0\x11",
-    text_format="{mode:<7} {solar_power:>5.0f}W",
-    callback=lambda text: display_func(text, 8),
+    callback=lambda data: display_func(
+        "{mode:<7} {solar_power:>5.0f}W".format(**data), 8
+    ),
 )
 dcdc = VictronDCDC(
     mac=b"\xee\xc0\xb8\x8c\x53\xf3",
     key=b"\x10\x63\x76\x13\x6f\xf4\xd0\x8c\x6a\x01\x99\x15\xfd\xee\xc0\x11",
-    text_format="{mode:<7}",
-    callback=lambda text: display_func(text, 52),
+    callback=lambda data: display_func("{mode:<7}".format(**data), 52),
 )
 monitor = VictronMonitor(
     mac=b"\xee\xc0\xb8\x8c\x53\xf2",
     key=b"\x10\x63\x76\x13\x6f\xf4\xd0\x8c\x6a\x01\x99\x15\xfd\xee\xc0\x11",
-    text_format="{remaining_mins:<3}M {current:>3+.0f}A {soc:>3}%",
-    callback=lambda text: display_func(text, 96),
+    callback=lambda data: display_func(
+        "{remaining_mins:<3}M {current:>3+.0f}A {soc:>3}%".format(**data), 96
+    ),
 )
 
 victron = VictronBLE()
