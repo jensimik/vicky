@@ -26,14 +26,14 @@ class DeviceMeta(type):
 
 
 class VictronDevice(metaclass=Devicemeta):
-    def __init__(self, mac, key, text_format, callback):
+    def __init__(self, mac: str, key: str, text_format: str, callback):
         self._mac = mac
         self._key = key
         self._text_format = text_format
         self.callback = callback
         self._offset = offset
 
-    def uncipher(self, adv_data) -> str:
+    def uncipher(self, adv_data: memoryview) -> str:
         ctr = bytearray(adv_data[12:14])
         ctr.extend(bytes(14))
         ciphertext = bytearray(adv_data[15:])
@@ -46,7 +46,7 @@ class VictronDevice(metaclass=Devicemeta):
 
 
 class VictronSolar(VictronDevice):
-    def parse(self, cleartext) -> dict:
+    def parse(self, cleartext: str) -> dict:
         (
             state,
             error,
@@ -73,7 +73,7 @@ class VictronSolar(VictronDevice):
 
 
 class VictronDCDC(VictronDevice):
-    def parse(self, cleartext) -> dict:
+    def parse(self, cleartext: str) -> dict:
         state, error, input_voltage, output_voltage, off_reason = struct.unpack(
             "BBhhI", cleartext
         )
@@ -88,7 +88,7 @@ class VictronDCDC(VictronDevice):
 
 
 class VictronMonitor(VictronDevice):
-    def parse(self, cleartext) -> dict:
+    def parse(self, cleartext: str) -> dict:
         # cannot parse current in 24bit field skipping those bytes with x
         remaining_mins, voltage, alarm, aux, consumed_ah, soc = struct.unpack(
             "HHHHxxxHH", cleartext
@@ -115,7 +115,7 @@ class VictronBLE:
     def __init__(self):
         self._MACS = {}
 
-    def register_device(self, device):
+    def register_device(self, device: VictronDevice):
         self._MACS[device._mac] = device
 
     def start(self):
