@@ -140,8 +140,8 @@ class VictronBLE:
         BLE().active(False)
         BLE().gap_scan(None)
 
-    def handle_ble_scan(self, ev, data):
-        if ev == _IRQ_SCAN_RESULT:
+    def handle_ble_scan(self, event, data):
+        if event == _IRQ_SCAN_RESULT:
             addr_type, addr, adv_type, rssi, adv_data = data
             if (
                 rssi > _BT_MIN_RSSI
@@ -153,7 +153,7 @@ class VictronBLE:
                 if baddr in self._MACS:
                     device = self._MACS[baddr]
                     cleartext = device.uncipher(adv_data)
-                    data = device.parse(cleartext)
+                    device_data = device.parse(cleartext)
                     # only do callback if data changed
-                    if data:
-                        device.callback(data)
+                    if device_data:
+                        device.callback(device_data)
