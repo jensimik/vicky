@@ -28,10 +28,9 @@ class DeviceMeta(type):
 class VictronDevice(metaclass=Devicemeta):
     """A VictronDevice base class"""
 
-    def __init__(self, mac: str, key: str, text_format: str, callback):
+    def __init__(self, mac: str, key: str, callback):
         self._mac = mac
         self._key = key
-        self._text_format = text_format
         self.callback = callback
         self._data = {}
 
@@ -147,7 +146,7 @@ class VictronBLE:
 
     def stop(self):
         BLE().active(False)
-        BLE().gap_scan(None, 3000000, 400000)
+        BLE().gap_scan(None)
 
     def handle_ble_scan(self, ev, data):
         if ev == _IRQ_SCAN_RESULT:

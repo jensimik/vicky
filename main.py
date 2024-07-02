@@ -1,8 +1,12 @@
 import machine
 import time
+import micropython
 import vga1_16x32 as font
 from st7789py import ST7789, WHITE, BLACK
 from victron_ble import VictronBLE, VictronSolar, VictronDCDC, VictronMonitor
+
+# allocate buffer for irq exceptions
+micropython.alloc_emergency_exception_buf(100)
 
 # setup m5stick
 power = machine.Pin(4, machine.Pin.OUT)  # when not powered via USB
