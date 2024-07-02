@@ -15,17 +15,7 @@ MODES = {
 }
 
 
-class DeviceMeta(type):
-    """A Device metaclass that will be used for device class creation."""
-
-    def __instancecheck__(cls, instance):
-        return cls.__subclasscheck__(type(instance))
-
-    def __subclasscheck__(cls, subclass):
-        return hasattr(subclass, "parse") and callable(subclass.parse)
-
-
-class VictronDevice(metaclass=Devicemeta):
+class VictronDevice:
     """A VictronDevice base class"""
 
     def __init__(self, mac: str, key: str, callback):
@@ -72,6 +62,7 @@ class VictronSolar(VictronDevice):
         )
         return self._return_if_changed(
             {
+                "mode": mode,
                 "state": state,
                 "error": error,
                 "battery_voltage": battery_voltage,
@@ -93,6 +84,7 @@ class VictronDCDC(VictronDevice):
         mode = MODES[state]
         return self._return_if_changed(
             {
+                "mode": mode,
                 "state": state,
                 "error": error,
                 "input_voltage": input_voltage,
@@ -157,8 +149,9 @@ class VictronBLE:
                 and (adv_type == 0 or adv_type == 2)
                 and adv_data[1:2] == b"\x01"
             ):
-                if addr in self._MACS:
-                    device = self._MACS[bytes(addr)]
+                baddr = bytes(addr)
+                if baddr in self._MACS:
+                    device = self._MACS[baddr]
                     cleartext = device.uncipher(adv_data)
                     data = device.parse(cleartext)
                     # only do callback if data changed
