@@ -28,6 +28,8 @@ lcd = ST7789(
     rotation=rotation,
 )
 lcd.fill(BLACK)
+# set backlight off to preserve battery
+lcd.backlight.off()
 
 
 # generic display function to write white text on black background
