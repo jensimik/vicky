@@ -1,7 +1,7 @@
 import machine
 import time
 import micropython
-from romfonts import vga1_16x32 as font
+import vga1_16x32 as font
 from st7789py import ST7789, BLACK
 from victron_ble import VictronBLE, VictronSolar, VictronDCDC, VictronMonitor
 
@@ -29,7 +29,10 @@ lcd = ST7789(
 )
 lcd.fill(BLACK)
 # set backlight off to preserve battery
-lcd.backlight.off()
+backlight = machine.PWM(lcd.backlight)
+backlight = machine.PWM(lcd.backlight)
+backlight.freq(750)
+backlight.duty(512)
 
 
 # generic display function to write white text on black background
