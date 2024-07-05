@@ -34,7 +34,7 @@ backlight.freq(750)
 backlight.duty(512)
 
 
-# generic display function display is about 14 chars wide and 3 lines heigh with 16x32 monospace font
+# generic display function display is about 14 chars wide and 3 lines high with 16x32 monospace font
 def display_func(text_format, offset):
     def display_func_inner(toggle, data):
         if data:
