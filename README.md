@@ -7,3 +7,7 @@
  + Victron Smart Battery Monitor
 
 ![vicky](https://github.com/jensimik/vicky/assets/310660/96f9856e-81d8-42b2-9f81-2593a1e90c0a)
+
++ first line is Solar charger (state, amp, watt)
++ second line is dcdc charger (state)
++ third line is Battery monitor (hh:mm left, amp, state-of-charge in percentage)
