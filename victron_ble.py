@@ -9,9 +9,9 @@ _IRQ_SCAN_DONE = const(6)
 
 MODES = {
     0: "off",
-    3: "bulk",
-    4: "absorb",
-    5: "float",
+    3: "blk",  # bulk
+    4: "abs",  # absorb
+    5: "flt",  # float
 }
 
 
@@ -22,6 +22,7 @@ class VictronDevice:
         self._mac = mac
         self._key = key
         self.callback = callback
+        self._toggle = False
         self._data = {}
 
     def uncipher(self, adv_data: memoryview) -> str:
@@ -98,22 +99,36 @@ class VictronMonitor(VictronDevice):
     """Victron Battery Monitor"""
 
     def parse(self, cleartext: str) -> dict:
-        # cannot parse current in 24bit field skipping those bytes with x
-        remaining_mins, voltage, alarm, aux, consumed_ah, soc = struct.unpack(
-            "HHHHxxxHH", cleartext
-        )
+        remaining_mins, voltage, alarm, aux = struct.unpack("HHHH", cleartext)
         voltage = voltage / 100
-        consumed_ah = consumed_ah / 100
-        soc = ((soc & 0x3FFF) >> 4) / 10
-        # get current
-        chunk = bytes(cleartext[4:7])
-        current = (
-            struct.unpack("<i", chunk + ("\0" if chunk[2] < 128 else "\xff")) / 1000
+        consumed_ah = struct.unpack("H", bytes(cleartext[11:13]))[0] / 100
+        soc = float(
+            ((struct.unpack("H", bytes(cleartext[13:15]))[0] & 0x3FFF) >> 4) / 10
         )
+        # get current
+        chunk = bytes(cleartext[8:11])
+        current = float(
+            (
+                (
+                    struct.unpack(
+                        "<i", chunk + (b"\ff" if chunk[2] == 0x80 else b"\x00")
+                    )[0]
+                    >> 2
+                )
+                / 1000
+            )
+        )
+        r_hours = remaining_mins // 60
+        r_mins = remaining_mins % 60
+        if r_hours > 99:
+            r_hours = 99
+            r_mins = 99
         remaining_mins = 999 if remaining_mins > 999 else remaining_mins
         return self._return_if_changed(
             {
                 "remaining_mins": remaining_mins,
+                "r_hours": r_hours,
+                "r_mins": r_mins,
                 "voltage": voltage,
                 "consumed_ah": consumed_ah,
                 "current": current,
@@ -138,7 +153,7 @@ class VictronBLE:
 
     def stop(self):
         BLE().active(False)
-        BLE().gap_scan(None)
+        BLE().gap_scan(None, 3000000, 400000)
 
     def handle_ble_scan(self, event, data):
         if event == _IRQ_SCAN_RESULT:
@@ -154,6 +169,5 @@ class VictronBLE:
                     device = self._MACS[baddr]
                     cleartext = device.uncipher(adv_data)
                     device_data = device.parse(cleartext)
-                    # only do callback if data changed
-                    if device_data:
-                        device.callback(device_data)
+                    device._toggle = False if device._toggle else True
+                    device.callback(device._toggle, device_data)
