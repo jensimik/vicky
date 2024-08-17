@@ -1,11 +1,6 @@
 import struct
-from micropython import const
-from bluetooth import BLE
 from cryptolib import aes
-
-_BT_MIN_RSSI = const(-85)
-_IRQ_SCAN_RESULT = const(5)
-_IRQ_SCAN_DONE = const(6)
+from ble_common import SensorDevice
 
 MODES = {
     0: "off",
@@ -15,15 +10,8 @@ MODES = {
 }
 
 
-class VictronDevice:
+class VictronDevice(SensorDevice):
     """A VictronDevice base class"""
-
-    def __init__(self, mac: str, key: str, callback):
-        self._mac = mac
-        self._key = key
-        self.callback = callback
-        self._toggle = False
-        self._data = {}
 
     def uncipher(self, adv_data: memoryview) -> str:
         ctr = bytearray(adv_data[12:14])
@@ -35,12 +23,6 @@ class VictronDevice:
         cipher.encrypt(ctr, ctr)
         cleartext = bytes(a ^ b for a, b in zip(ciphertext, ctr))
         return cleartext
-
-    def _return_if_changed(self, data: dict):
-        if self._data == data:
-            return None
-        self._data = data
-        return self._data
 
 
 class VictronSolar(VictronDevice):
@@ -135,39 +117,3 @@ class VictronMonitor(VictronDevice):
                 "soc": soc,
             }
         )
-
-
-class VictronBLE:
-    """Victron Bluetooth scanner"""
-
-    def __init__(self):
-        self._MACS = {}
-
-    def register_device(self, device: VictronDevice):
-        self._MACS[device._mac] = device
-
-    def start(self):
-        BLE().active(True)
-        BLE().irq(self.handle_ble_scan)
-        BLE().gap_scan(0, 3000000, 400000)
-
-    def stop(self):
-        BLE().active(False)
-        BLE().gap_scan(None, 3000000, 400000)
-
-    def handle_ble_scan(self, event, data):
-        if event == _IRQ_SCAN_RESULT:
-            addr_type, addr, adv_type, rssi, adv_data = data
-            if (
-                rssi > _BT_MIN_RSSI
-                and adv_data[5:8] == b"\xE1\x02\x10"
-                and (adv_type == 0 or adv_type == 2)
-                and adv_data[1:2] == b"\x01"
-            ):
-                baddr = bytes(addr)
-                if baddr in self._MACS:
-                    device = self._MACS[baddr]
-                    cleartext = device.uncipher(adv_data)
-                    device_data = device.parse(cleartext)
-                    device._toggle = False if device._toggle else True
-                    device.callback(device._toggle, device_data)

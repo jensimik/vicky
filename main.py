@@ -3,7 +3,9 @@ import time
 import micropython
 import vga1_16x32 as font
 from st7789py import ST7789, BLACK, WHITE
-from victron_ble import VictronBLE, VictronSolar, VictronDCDC, VictronMonitor
+from ble_common import GenericBLE
+from ble_victron import VictronSolar, VictronDCDC, VictronMonitor
+from ble_hygrometer import Hygrometer
 
 # allocate buffer for irq exceptions
 # micropython.alloc_emergency_exception_buf(100)
@@ -35,17 +37,17 @@ backlight.duty(512)
 
 
 # generic display function display is about 14 chars wide and 3 lines high with 16x32 monospace font
-def display_func(text_format, offset):
+def display_func(text_format, offset_y, offset_x=0):
     def display_func_inner(toggle, data):
         if data:
-            lcd.text(font, text_format.format(**data), 6, offset)
+            lcd.text(font, text_format.format(**data), 6 + offset_x, offset_y)
         # show data has been received
         if toggle:
-            lcd.vline(0, offset, 32, WHITE)
-            lcd.vline(1, offset, 32, WHITE)
+            lcd.vline(0, offset_y, 32, WHITE)
+            lcd.vline(1, offset_y, 32, WHITE)
         else:
-            lcd.vline(0, offset, 32, BLACK)
-            lcd.vline(1, offset, 32, BLACK)
+            lcd.vline(0, offset_y, 32, BLACK)
+            lcd.vline(1, offset_y, 32, BLACK)
 
     return display_func_inner
 
@@ -56,28 +58,33 @@ solar = VictronSolar(
     key=b"\x10\x63\x76\x13\x6f\xf4\xd0\x8c\x6a\x01\x99\x15\xfd\xee\xc0\x11",
     callback=display_func(
         text_format="{mode:<3}  {battery_charging_current:>4.1f} {solar_power:>3.0f}W",
-        offset=8,
+        offset_y=8,
     ),
 )
 dcdc = VictronDCDC(
     mac=b"\xcd\x73\xa1\x0f\x95\x99",
     key=b"\x9f\xea\xf4\x0c\x53\xdb\xd0\xff\x1c\x26\xb9\xba\xe6\xf3\xb7\xce",
-    callback=display_func(text_format="{mode:<3}", offset=52),
+    callback=display_func(text_format="{mode:<3}", offset_y=52),
 )
-monitor = VictronMonitor(
-    mac=b"\xc7\x83\xfd\xca\xca\x06",
-    key=b"\xe3\x39\xd2\xf5\x2c\xed\x10\x2f\x1c\x2c\xe9\x0e\x94\xa1\x70\x09",
-    callback=display_func(
-        text_format="{r_hours:00}:{r_mins:00} {current: >4.1f} {soc:>2.0f}%", offset=96
-    ),
+# monitor = VictronMonitor(
+#     mac=b"\xc7\x83\xfd\xca\xca\x06",
+#     key=b"\xe3\x39\xd2\xf5\x2c\xed\x10\x2f\x1c\x2c\xe9\x0e\x94\xa1\x70\x09",
+#     callback=display_func(
+#         text_format="{r_hours:00}:{r_mins:00} {current: >4.1f} {soc:>2.0f}%", offset_y=96
+#     ),
+# )
+hygrometer = Hygrometer(
+    mac=b"\x62\x81\x00\x00\x07\x54",
+    key=None,
+    callback=display_func(text_format="{temperature:>4.1f}C {humidity:>2.0f}%", offset_y=96)
 )
 
 # setup Victron Bluetooth scanner
-victron = VictronBLE()
-victron.register_device(solar)
-victron.register_device(dcdc)
-victron.register_device(monitor)
-victron.start()
+ble = GenericBLE()
+ble.register_device(solar)
+ble.register_device(dcdc)
+ble.register_device(hygrometer)
+ble.start()
 
 
 # setup buttons
