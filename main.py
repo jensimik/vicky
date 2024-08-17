@@ -6,6 +6,7 @@ from st7789py import ST7789, BLACK, WHITE
 from ble_common import GenericBLE
 from ble_victron import VictronSolar, VictronDCDC, VictronMonitor
 from ble_hygrometer import Hygrometer
+from ble_fridge import Fridge
 
 # allocate buffer for irq exceptions
 # micropython.alloc_emergency_exception_buf(100)
@@ -76,7 +77,13 @@ dcdc = VictronDCDC(
 hygrometer = Hygrometer(
     mac=b"\x62\x81\x00\x00\x07\x54",
     key=None,
-    callback=display_func(text_format="{temperature:>4.1f}C {humidity:>2.0f}%", offset_y=96)
+    callback=display_func(text_format="{temperature:>2.0f}C {humidity:>2.0f}%", offset_y=96)
+)
+
+fridge = Fridge(
+    mac=b"\x2E\x4F\x29\x48\x66\x7F",
+    key=None,
+    callback=display_func(text_format="{run_mode}{current_temperature:>2.1f}C", offset_y=96, offset_x=130)
 )
 
 # setup Victron Bluetooth scanner
@@ -84,6 +91,11 @@ ble = GenericBLE()
 ble.register_device(solar)
 ble.register_device(dcdc)
 ble.register_device(hygrometer)
+ble.register_device(fridge)
+fridge.connect(ble._ble)
+# setup timer to query fridge every 30 seconds
+fridge_timer = machine.Timer(1, period=30000, callback=lambda _: fridge.query(ble._ble))
+time.sleep(4)
 ble.start()
 
 
