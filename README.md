@@ -1,5 +1,5 @@
 # Vicky
- Tiny Victron info screen for campervans - Micropython 1.23.0 SPIRAM version for M5StickC PLUS2. Using the bluetooth broadcast messages from Victron devices.
+ Tiny info screen for campervans - Micropython 1.23.0 SPIRAM version for M5StickC PLUS2. Using the bluetooth broadcast messages from Victron devices, generic hygrometer, and fridges.
 
  supports:
  + Victron Smart MPPT Solar charger
