@@ -36,10 +36,10 @@ class VictronSolar(VictronDevice):
             battery_charging_current,
             yield_today,
             solar_power,
-            external_device_load,
+            packed_external_device_load,
         ) = struct.unpack("BBhhHHH", cleartext)
         mode = MODES[state]
-        battery_charging_current = battery_charging_current / 10
+        external_device_load = packed_external_device_load & 0x1FF
         external_device_load = (
             0 if external_device_load == 0x1FF else external_device_load
         )
@@ -48,11 +48,11 @@ class VictronSolar(VictronDevice):
                 "mode": mode,
                 "state": state,
                 "error": error,
-                "battery_voltage": battery_voltage,
-                "battery_charging_current": battery_charging_current,
+                "battery_voltage": battery_voltage / 100,
+                "battery_charging_current": battery_charging_current / 10,
                 "yield_today": yield_today,
                 "solar_power": solar_power,
-                "external_device_load": external_device_load,
+                "external_device_load": external_device_load / 10,
             }
         )
 

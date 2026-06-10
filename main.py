@@ -38,17 +38,21 @@ backlight.duty(512)
 
 
 # generic display function display is about 14 chars wide and 3 lines high with 16x32 monospace font
-def display_func(text_format, offset_y, offset_x=0):
+def display_func(lines):
     def display_func_inner(toggle, data):
         if data:
-            lcd.text(font, text_format.format(**data), 6 + offset_x, offset_y)
+            for fmt, y, x in lines:
+                lcd.fill_rect(6 + x, y, 220, 32, BLACK)
+                lcd.text(font, fmt.format(**data), 6 + x, y)
         # show data has been received
+        indicator_y = lines[0][1]
+        indicator_height = len(lines) * 32
         if toggle:
-            lcd.vline(0, offset_y, 32, WHITE)
-            lcd.vline(1, offset_y, 32, WHITE)
+            lcd.vline(0, indicator_y, indicator_height, WHITE)
+            lcd.vline(1, indicator_y, indicator_height, WHITE)
         else:
-            lcd.vline(0, offset_y, 32, BLACK)
-            lcd.vline(1, offset_y, 32, BLACK)
+            lcd.vline(0, indicator_y, indicator_height, BLACK)
+            lcd.vline(1, indicator_y, indicator_height, BLACK)
 
     return display_func_inner
 
@@ -58,15 +62,16 @@ solar = VictronSolar(
     mac=b"\xee\xc0\xb8\x8c\x53\xf4",
     key=b"\x10\x63\x76\x13\x6f\xf4\xd0\x8c\x6a\x01\x99\x15\xfd\xee\xc0\x11",
     callback=display_func(
-        text_format="{mode:<3}  {battery_charging_current:>4.1f} {solar_power:>3.0f}W",
-        offset_y=8,
+        [
+            ("{mode:<3}  {battery_charging_current:>4.1f} {solar_power:>3.0f}W", 8, 0)
+        ]
     ),
 )
-dcdc = VictronDCDC(
-    mac=b"\xcd\x73\xa1\x0f\x95\x99",
-    key=b"\x9f\xea\xf4\x0c\x53\xdb\xd0\xff\x1c\x26\xb9\xba\xe6\xf3\xb7\xce",
-    callback=display_func(text_format="{mode:<3}", offset_y=52),
-)
+#dcdc = VictronDCDC(
+#    mac=b"\xcd\x73\xa1\x0f\x95\x99",
+#    key=b"\x9f\xea\xf4\x0c\x53\xdb\xd0\xff\x1c\x26\xb9\xba\xe6\xf3\xb7\xce",
+#    callback=display_func(text_format="{mode:<3}", offset_y=52),
+#)
 # monitor = VictronMonitor(
 #     mac=b"\xc7\x83\xfd\xca\xca\x06",
 #     key=b"\xe3\x39\xd2\xf5\x2c\xed\x10\x2f\x1c\x2c\xe9\x0e\x94\xa1\x70\x09",
@@ -77,19 +82,27 @@ dcdc = VictronDCDC(
 hygrometer = Hygrometer(
     mac=b"\x62\x81\x00\x00\x07\x54",
     key=None,
-    callback=display_func(text_format="{temperature:>2.0f}C {humidity:>2.0f}%", offset_y=96)
+    callback=display_func(
+        [
+            ("{temperature:>2.0f}C {humidity:>2.0f}%", 96, 0)
+        ]
+    )
 )
 
 fridge = Fridge(
     mac=b"\x2E\x4F\x29\x48\x66\x7F",
     key=None,
-    callback=display_func(text_format="{run_mode}{current_temperature:>2.1f}C", offset_y=96, offset_x=130)
+    callback=display_func(
+        [
+            ("{run_mode}{current_temperature:>2.1f}C", 96, 130)
+        ]
+    )
 )
 
 # setup Victron Bluetooth scanner
 ble = GenericBLE()
 ble.register_device(solar)
-ble.register_device(dcdc)
+#ble.register_device(dcdc)
 ble.register_device(hygrometer)
 ble.register_device(fridge)
 fridge.connect(ble._ble)
